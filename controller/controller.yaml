@@ -1,0 +1,125 @@
+templates:
+  exchanges:
+    - exchange:
+      name: template_exchange_1
+      type: topic
+      durable: false
+      autoDelete: false
+      internal: false
+      noWait: false
+      args: nil
+    - exchange:
+      name: template_exchange_2
+      type: topic
+      durable: false
+      autoDelete: false
+      internal: false
+      noWait: false
+      args: nil
+  queues:
+    - queue:
+      name: template_queue_1
+      durable: false
+      autoDelete: false
+      exclusive: false
+      noWait: false
+      args: "{\"x-message-ttl\":\"6000\", \"x-max-length\":\"100\"}"
+    - queue:
+      name: template_queue_2
+      durable: false
+      autoDelete: false
+      exclusive: false
+      noWait: false
+      args: nil
+  consumers:
+    - consumer:
+      name: template_consumer_1
+      autoAck: true
+      exclusive: false
+      noLocal: false
+      noWait: false
+      args: nil
+    - consumer:
+      name: template_consumer_2
+      autoAck: true
+      exclusive: false
+      noLocal: false
+      noWait: false
+      args: nil
+queues:
+  - queue:      
+    name: queue_1
+    template: template_queue_1
+  - queue:      
+    name: queue_2
+    template: template_queue_2
+consumers:
+  - consumer: 
+    name: consumer_1
+    template: template_consumer_1
+  - consumer:
+    name: consumer_2
+    template: template_consumer_1         
+queueConsumers:
+  - queue: 
+    nsme: queue_1
+    consumers: 
+      - consumer:
+        name: consumer_1   
+      - consumer:
+        name: consumer_2          
+  - queue: 
+    nsme: queue_2
+    consumers: 
+      - consumer:
+        name: consumer_1              
+exchanges:
+  - exchange:      
+    name: exchange_1
+    template: template_exchange_1
+  - exchange:      
+    name: exchange_2
+    template: template_exchange_2
+exchangeQueues:
+  - exchange:
+    name:  exchange_1
+    queues:
+      - queue:
+        name: queue_1    
+      - queue:
+        name: queue_2   
+  - exchange:
+    name:  exchange_2
+    queues:
+      - queue:
+        name: queue_1    
+      - queue:
+        name: queue_2                  
+connections:
+  - connection:
+    name: connection_1
+    connectionId: HQ
+    serverURL: amqp://{{user}}:{{password}}@localhost:{{port}}
+    user: guest
+    password: guest
+    port: 5672
+    UIPort: 15672
+    pool: 20
+    channels:
+    - channel:
+      name: channel_1
+      instance: 1
+      exchanges: 
+        - exchange: 
+          name: exchange_1
+        - exchange: 
+          name: exchange_2  
+    - channel:
+      name: channel_2
+      instance: 2
+      exchanges: 
+        - exchange: 
+          name: exchange_1
+          
+ 
+    

@@ -1,0 +1,9 @@
+general:  
+  appName: Event-Bus
+  appType: controller
+  queueType: rabbitmq
+  httpHost: localhost:7000
+  log_file_path: c:/ronen/development/git/event_bus/event-bus/controller/logs/log.txt
+  log_level: trace
+  stdout_flg: true
+  ppx_log: true 

@@ -1,0 +1,28 @@
+connections:
+  - connection:
+    connectionId: xxx
+    queueType: rabbitmq
+    serverURL: amqp://{{user}}:{{password}}@localhost:{{port}}
+    user: guest
+    password: guest
+    port: 5672
+    UIPort: 15672
+    pool: 2000
+    queues:
+    - queue:
+      name: queue{{i}}
+      multiplier: 1500
+      durable: false
+      autoDelete: false
+      exclusive: false
+      noWait: false
+      agrs: nil
+      consumers:
+        - consumer:
+          name: consumer1
+          autoAck: true
+          exclusive: false
+          noLocal: false
+          noWait: false
+          args: nil 
+        

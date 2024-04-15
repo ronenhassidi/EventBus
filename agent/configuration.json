@@ -1,0 +1,20 @@
+{
+"configs":  
+[
+  {
+    "name":"general",
+    "path":".",
+    "type":"yaml"
+  },
+  {
+    "name":"db",
+    "path":".",
+    "type":"yaml"
+  },
+  {
+    "name":"agent",
+    "path":".",
+    "type":"yaml"
+  }
+]
+}
