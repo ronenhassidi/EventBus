@@ -25,12 +25,13 @@ func main() {
 	appViper.Unmarshal(inputQueueConfig)
 	config.ValidateInputQueueConfig(inputQueueConfig)
 
+	config.CreateQueueList(inputQueueConfig)
 	//inputQueueConfig = config.FillQueueTemplateValues(inputQueueConfig)
-	//config.RabbitList = config.CreateQueueList(inputQueueConfig)
+	//	config.RabbitList = config.CreateQueueList(inputQueueConfig)
 
 	//  ================================================== Need to be deleted =====================
-	//inputQueues := config.GetQueuesConfiguration(inputQueueConfig)
-	//testQueue(appType, inputQueues, inputQueueConfig)
+	//	inputQueues := config.GetQueuesConfiguration(inputQueueConfig)
+	//	testQueue(appType, inputQueues, inputQueueConfig)
 	//  ================================================== Need to be deleted =====================
 
 	// Release the queuee
@@ -47,7 +48,6 @@ func main() {
 }
 
 /*
-
 func testQueue(appType string, inputQueues map[string]*config.QueueConfig, inputQueueConfig *config.InputQueueConfig) {
 
 	if appType == constants.CONTROLLER {

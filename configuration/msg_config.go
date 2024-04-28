@@ -4,20 +4,20 @@ type MsgData struct {
 	MsgId   string `yaml:"msgId" json:"msgId"`
 	Station string `yaml:"station" json:"station"`
 	MsgType string `yaml:"msgType" json:"msgType"`
-	ApiMsg  ApiMsg `yaml:"apiMsg,mapstructure" json:"apiMsg,mapstructure"`
-	DbMsg   DbMsg  `yaml:"dbMsg,mapstructure" json:"dbMsg,mapstructure"`
-	FsMsg   FsMsg  `yaml:"fsMsg,mapstructure" json:"fsMsg,mapstructure"`
+	ApiMsg  ApiMsg `yaml:"apiMsg" json:"apiMsg"`
+	DbMsg   DbMsg  `yaml:"dbMsg" json:"dbMsg"`
+	FsMsg   FsMsg  `yaml:"fsMsg" json:"fsMsg"`
 }
 
 type ApiMsg struct {
-	Params        []KeyValue             `yaml:"params,mapstructure" json:"params,mapstructure"`
-	Authorization Authorization          `yaml:"authorization" json:"authorization,mapstructure"`
-	Headers       []KeyValue             `yaml:"headers,mapstructure" json:"headers,mapstructure"`
-	Body          map[string]interface{} `yaml:"body,mapstructure" json:"body,mapstructure"`
+	Params        []KeyValue             `yaml:"params" json:"params"`
+	Authorization Authorization          `yaml:"authorization" json:"authorization"`
+	Headers       []KeyValue             `yaml:"headers" json:"headers"`
+	Body          map[string]interface{} `yaml:"body" json:"body"`
 	MethodType    string                 `yaml:"methodType" json:"methodType"`
 	Url           string                 `yaml:"url" json:"url"`
-	//ApiResponse   ApiResponse            `yaml:"apiResponse,mapstructure" json:"apiResponse,mapstructure"`
-	ApiResponse map[string]interface{} `yaml:"apiResponse,mapstructure" json:"apiResponse,mapstructure"`
+	//ApiResponse   ApiResponse            `yaml:"apiResponse" json:"apiResponse"`
+	ApiResponse map[string]interface{} `yaml:"apiResponse" json:"apiResponse"`
 }
 
 type KeyValue struct {
@@ -39,12 +39,12 @@ type Authorization struct {
 type ApiResponse struct {
 	Status        string     `yaml:"status" json:"status"`
 	Message       string     `yaml:"message" json:"message"`
-	KeyValueArray []KeyValue `yaml:"keyValueArray,mapstructure" json:"keyValueArray,mapstructure"`
+	KeyValueArray []KeyValue `yaml:"keyValueArray" json:"keyValueArray"`
 }
 
 type DbMsg struct {
 	Sql          string       `yaml:"body" json:"sql"`
-	DbConnection DbConnection `yaml:"dbConnection,mapstructure" json:"dbConnection,mapstructure"`
+	DbConnection DbConnection `yaml:"dbConnection" json:"dbConnection"`
 }
 
 type DbConnection struct {
@@ -52,23 +52,23 @@ type DbConnection struct {
 	Password   string     `yaml:"password" json:"password"`
 	Server     string     `yaml:"server" json:"server"`
 	Db         string     `yaml:"db" json:"db"`
-	DbResponse DbResponse `yaml:"dbResponse,mapstructure" json:"dbResponse,mapstructure"`
+	DbResponse DbResponse `yaml:"dbResponse" json:"dbResponse"`
 }
 
 type FsMsg struct {
 	Script       string       `yaml:"script" json:"script"`
-	DbConnection DbConnection `yaml:"dbConnection,mapstructure" json:"dbConnection,mapstructure"`
-	FsResponse   FsResponse   `yaml:"fsResponse,mapstructure" json:"fsResponse,mapstructure"`
+	DbConnection DbConnection `yaml:"dbConnection" json:"dbConnection"`
+	FsResponse   FsResponse   `yaml:"fsResponse" json:"fsResponse"`
 }
 
 type DbResponse struct {
 	Status  string     `yaml:"status" json:"status"`
 	Message string     `yaml:"message" json:"message"`
-	Header  []KeyValue `yaml:"headers,mapstructure" json:"headers,mapstructure"`
+	Header  []KeyValue `yaml:"headers" json:"headers"`
 }
 
 type FsResponse struct {
 	Status  string     `yaml:"status" json:"status"`
 	Message string     `yaml:"message" json:"message"`
-	Header  []KeyValue `yaml:"headers,mapstructure" json:"headers,mapstructure"`
+	Header  []KeyValue `yaml:"headers" json:"headers"`
 }

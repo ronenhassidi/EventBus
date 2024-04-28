@@ -1,8 +1,9 @@
-# Kafka
+# EventBus
 
 ## Prerequisites
 - Install go (preferably version go1.18.1 or greater) and add to path
 - Install swag for generating documentation and add in path (in the Swagger - Prerequisites)
+- docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
 
 ## Build package
 - Build the package by specifying the entry point file

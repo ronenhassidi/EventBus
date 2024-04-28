@@ -23,7 +23,7 @@ templates:
       autoDelete: false
       exclusive: false
       noWait: false
-      args: "{\"x-message-ttl\":\"6000\", \"x-max-length\":\"100\"}"
+      args: nil #"{\"x-message-ttl\":\"6000\", \"x-max-length\":\"100\"}"
     - queue:
       name: template_queue_2
       durable: false
@@ -62,14 +62,14 @@ consumers:
     template: template_consumer_1         
 queueConsumers:
   - queue: 
-    nsme: queue_1
+    name: queue_1
     consumers: 
       - consumer:
         name: consumer_1   
       - consumer:
         name: consumer_2          
   - queue: 
-    nsme: queue_2
+    name: queue_2
     consumers: 
       - consumer:
         name: consumer_1              
@@ -94,7 +94,7 @@ exchangeQueues:
       - queue:
         name: queue_1    
       - queue:
-        name: queue_2                  
+        name: queue_2                 
 connections:
   - connection:
     name: connection_1
