@@ -1,24 +1,22 @@
 package main
 
-/*
 // The main need to be identical for controller and agent ad copied to both directories /controller and /agent
 
 import (
 	"os"
 
-	consumer "github.com/gilbarco-ai/event-bus/agent/consumer"
+	viper "github.com/gilbarco-ai/event-bus/common/configuration/viper"
+	"github.com/gilbarco-ai/event-bus/common/constants"
+	log "github.com/gilbarco-ai/event-bus/common/log"
 	config "github.com/gilbarco-ai/event-bus/configuration"
-	viper "github.com/gilbarco-ai/event-bus/internal/common/configuration/viper"
-	"github.com/gilbarco-ai/event-bus/internal/common/constants"
-	logger "github.com/gilbarco-ai/event-bus/internal/common/log"
 	pkg "github.com/gilbarco-ai/event-bus/pkg/api/common"
 )
 
 func main() {
 
-	logger.Init("../logs/app.log", false)
-	logger.Info.Println("========================= Event bus started =========================")
 	viper.LoadMainConfig()
+	log.Init()
+	log.Logger.Info("========================= Event bus started =========================")
 
 	generalViper := viper.GetViper(constants.GENERAL)
 	appType := generalViper.GetString(constants.GENERAL_APP_TYPE) // controller \ agent
@@ -26,10 +24,9 @@ func main() {
 	appViper := viper.GetViper(appType)
 	inputQueueConfig := &config.InputQueueConfig{}
 	appViper.Unmarshal(inputQueueConfig)
+	config.ValidateInputQueueConfig(inputQueueConfig)
 
-	inputQueueConfig = config.FillQueueTemplateValues(inputQueueConfig)
-	config.RabbitList = config.CreateQueueList(inputQueueConfig)
-	//inputQueues := config.GetQueuesConfiguration(inputQueueConfig)
+	config.CreateQueueList(inputQueueConfig)
 
 	general := viper.GetViper("general")
 	httpHost := general.GetString("general.httpHost")
@@ -41,16 +38,20 @@ func main() {
 	if appType == constants.CONTROLLER {
 
 	} else if appType == constants.AGENT {
-		consumerList := config.GetConsumerList(inputQueueConfig)
+		queues := config.GetQueues(inputQueueConfig)
+
+		//consumerList := config.GetConsumerList(inputQueueConfig)
 		args := os.Args
 		if len(args) == 2 {
-			name := args[1]
-			config.ConsumeMsg(config.RabbitList[name], consumerList[name], args[1])
+			queueName := args[1]
+			//consumerName := args[2]
+			config.ConsumeMsg(config.RabbitList[queueName], queueName,
+				queues[queueName].Consumers[0])
 		} else {
-			rabbitList := config.CreateQueueList(inputQueueConfig)
-			for _, r := range rabbitList {
-				go consumer.ConsumeQueues(r)
-			}
+			//config.RabbitList = config.CreateQueueList(inputQueueConfig)
+			//for _, r := range rabbitList {
+			//go consumer.ConsumeQueues(r)
+			//}
 		}
 	}
 
@@ -63,6 +64,7 @@ func main() {
 
 }
 
+/*
 func testQueue(appType string, inputQueues map[string]*config.QueueConfig, inputQueueConfig *config.InputQueueConfig) {
 
 	if appType == constants.CONTROLLER {
@@ -88,4 +90,5 @@ func testQueue(appType string, inputQueues map[string]*config.QueueConfig, input
 	}
 
 }
+
 */

@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -17,6 +18,8 @@ var RabbitList map[string]Rabbit
 type Rabbit struct {
 	Connection *amqp091.Connection
 	Channel    *amqp091.Channel
+	Exchange   ExchangeTemplate
+	Bind       ExchangeBindingQueue
 	Pool       *queueUtil.RabbitMQPool
 	Queue      QueueTemplate
 }
@@ -115,8 +118,9 @@ type InputQueueConsumers struct {
 }
 
 type InputExchangeQueues struct {
-	Name   string        `yaml:"name" json:"name"`
-	Queues []InputQueues `yaml:"queues" json:"queues"`
+	Name                 string               `yaml:"name" json:"name"`
+	ExchangeBindingQueue ExchangeBindingQueue `yaml:"exchangeBindingQueue" json:"exchangeBindingQueue"`
+	Queues               []InputQueues        `yaml:"queues" json:"queues"`
 }
 
 type InputConsumer struct {
@@ -152,8 +156,20 @@ type ExchangeQueues struct {
 }
 
 type ExchangeQueuesTemplate struct {
-	Exchange ExchangeTemplate `yaml:"exchange" json:"exchange"`
-	Queues   []QueueTemplate  `yaml:"queues" json:"queues"`
+	Exchange             ExchangeTemplate     `yaml:"exchange" json:"exchange"`
+	ExchangeBindingQueue ExchangeBindingQueue `yaml:"exchangeBindingQueue" json:"exchangeBindingQueue"`
+	Queues               []QueueTemplate      `yaml:"queues" json:"queues"`
+}
+
+type ExchangeBindingQueue struct {
+	RoatingKey string `yaml:"roatingKey" json:"roatingKey"`
+	NoWait     bool   `yaml:"noWait" json:"noWait"`
+	Args       string `yaml:"args" json:"args"`
+}
+
+type QueueConsumersTemplate struct {
+	Queue     QueueTemplate      `yaml:"queue" json:"queue"`
+	Consumers []ConsumerTemplate `yaml:"consumer" json:"consumer"`
 }
 
 // Create a new config instance.
@@ -293,6 +309,22 @@ func getExchangeTemplate(exchanges map[string]*ExchangeQueuesTemplate, exchangeN
 	return exchange
 }
 
+func getExchangeBindingQueue(exchanges map[string]*ExchangeQueuesTemplate, exchangeName string) ExchangeBindingQueue {
+
+	var exchangeBindingQueue ExchangeBindingQueue
+	for _, e := range exchanges {
+		if e.Exchange.Name == exchangeName {
+			exchangeBindingQueue = ExchangeBindingQueue{
+				RoatingKey: e.ExchangeBindingQueue.RoatingKey,
+				NoWait:     e.ExchangeBindingQueue.NoWait,
+				Args:       e.ExchangeBindingQueue.Args,
+			}
+			break
+		}
+	}
+	return exchangeBindingQueue
+}
+
 func getExchangeQueueTemplates(exchanges map[string]*ExchangeQueuesTemplate, exchangeName string) []QueueTemplate {
 
 	var queues []QueueTemplate
@@ -377,6 +409,26 @@ func getQueueTemplate(queueName string, inputQueueConfig *InputQueueConfig) *Que
 
 }
 
+func getInputQueueTemplate(queueName string, inputQueueConfig *InputQueueConfig) *QueueTemplate {
+
+	queueTemplate := &QueueTemplate{}
+	queueTemplates := getQueueTemplates(inputQueueConfig)
+	for _, q := range inputQueueConfig.Queues {
+		if q.Name == queueName {
+			queueTemplate = getQueueInTemplates(q.Template, queueTemplates)
+			if queueTemplate == nil {
+				log.Logger.Error("Invalid queue name")
+				panic("Invalid queue name")
+			}
+			return queueTemplate
+		}
+
+	}
+
+	return queueTemplate
+
+}
+
 //================================   Consumer   ==================================================
 
 func getConsumerTemplates(inputQueueConfig *InputQueueConfig) map[string]*ConsumerTemplate {
@@ -409,6 +461,92 @@ func getConsumers(inputQueueConfig *InputQueueConfig) []InputConsumerTemplate {
 		consumerList = append(consumerList, inputConsumerTemplate)
 	}
 	return consumerList
+}
+
+func getConsumerTemplate(consumerName string, inputQueueConfig *InputQueueConfig) *ConsumerTemplate {
+
+	consumerTemplate := &ConsumerTemplate{}
+	consumerTemplates := getConsumerTemplates(inputQueueConfig)
+	for _, c := range inputQueueConfig.Consumers {
+		if c.Name == consumerName {
+			consumerTemplate = getConsumerInTemplates(c.Template, consumerTemplates)
+			if consumerTemplate == nil {
+				log.Logger.Error("Invalid consumer name")
+				panic("Invalid consumer name")
+			}
+			return consumerTemplate
+		}
+
+	}
+
+	return consumerTemplate
+
+}
+
+func getConsumerInTemplates(consumerName string, consumerTemplates map[string]*ConsumerTemplate) *ConsumerTemplate {
+	consumerTemplate := &ConsumerTemplate{}
+	for _, c := range consumerTemplates {
+		if c.Name == consumerName {
+			consumerTemplate = &ConsumerTemplate{
+				Name:      c.Name,
+				AutoAck:   c.AutoAck,
+				Exclusive: c.Exclusive,
+				NoLocal:   c.NoLocal,
+				NoWait:    c.NoWait,
+				Args:      c.Args,
+			}
+			return consumerTemplate
+		}
+	}
+	return nil
+}
+
+func GetQueues(inputQueueConfig *InputQueueConfig) map[string]*QueueConsumersTemplate {
+	queues := make(map[string]*QueueConsumersTemplate)
+	queues = getQueueConsumers(inputQueueConfig)
+	return queues
+}
+
+//================================   Queue consumers   ==================================================
+
+func getQueueConsumers(inputQueueConfig *InputQueueConfig) map[string]*QueueConsumersTemplate {
+	queueConsumers := make(map[string]*QueueConsumersTemplate)
+	queueTemplate := &QueueTemplate{}
+	consumerTemplate := &ConsumerTemplate{}
+	for _, eq := range inputQueueConfig.QueueConsumers {
+		if eq.Name == "" {
+			log.Logger.Error("Invalid queue name")
+			panic("Invalid queue name")
+		}
+		queueTemplate = getInputQueueTemplate(eq.Name, inputQueueConfig)
+		if queueTemplate == nil {
+			log.Logger.Error("Invalid queue name")
+			panic("Invalid queue name")
+		}
+		queueTemplate.Name = eq.Name
+		consumerList := []ConsumerTemplate{}
+		for _, qs := range eq.Consumers {
+			if qs.Name == "" {
+				log.Logger.Error("Invalid consumer name")
+				panic("Invalid consumer name")
+			}
+			consumerTemplate = getConsumerTemplate(qs.Name, inputQueueConfig)
+			if consumerTemplate == nil {
+				log.Logger.Error("Invalid consumer name")
+				panic("Invalid consumer name")
+			}
+			consumerTemplate.Name = qs.Name
+			consumerList = append(consumerList, *consumerTemplate)
+		}
+		queueConsumersTemplate := QueueConsumersTemplate{
+			Queue:     *queueTemplate,
+			Consumers: consumerList,
+		}
+		queueConsumers[eq.Name] = &queueConsumersTemplate
+	}
+
+	return queueConsumers
+
 }
 
 //================================   Exchange queue   ==================================================
@@ -445,8 +583,9 @@ func getExchangeQueues(inputQueueConfig *InputQueueConfig) map[string]*ExchangeQ
 			queueList = append(queueList, *queueTemplate)
 		}
 		exchangeQueuesTemplate := ExchangeQueuesTemplate{
-			Exchange: *exchangeTemplate,
-			Queues:   queueList,
+			Exchange:             *exchangeTemplate,
+			ExchangeBindingQueue: eq.ExchangeBindingQueue,
+			Queues:               queueList,
 		}
 		exchangeQueues[eq.Name] = &exchangeQueuesTemplate
 	}
@@ -489,18 +628,19 @@ func CreateQueueList(inputQueueConfig *InputQueueConfig) map[string]Rabbit {
 
 			conn, err := pool.GetConnection()
 			if err != nil {
-				log.Logger.Println(err)
+				log.Logger.Println(err.Error())
 				panic(err)
 			}
 			fmt.Println("Succesfully connected to RabbitMQ")
 			ch, err := conn.Channel()
 			if err != nil {
-				log.Logger.Println(err)
+				log.Logger.Println(err.Error())
 				panic(err)
 			}
 			fmt.Println("Succesfully get RabbitMQ channel")
 			for _, e := range c.Exchanges {
 				exchangeTemplate := getExchangeTemplate(exchanges, e.Name)
+				exchangeBindingQueue := getExchangeBindingQueue(exchanges, e.Name)
 				err = ch.ExchangeDeclare(
 					exchangeTemplate.Name,                  // exchange name
 					exchangeTemplate.Type,                  // exchange type
@@ -511,7 +651,7 @@ func CreateQueueList(inputQueueConfig *InputQueueConfig) map[string]Rabbit {
 					getRabbitMqArgs(exchangeTemplate.Args), // arguments
 				)
 				if err != nil {
-					log.Logger.Println(err)
+					log.Logger.Println(err.Error())
 					panic(err)
 				}
 
@@ -526,13 +666,26 @@ func CreateQueueList(inputQueueConfig *InputQueueConfig) map[string]Rabbit {
 						getRabbitMqArgs(q.Args),
 					)
 					if err != nil {
-						log.Logger.Println(err)
+						log.Logger.Println(err.Error())
 						panic(err)
+					}
+					err = ch.QueueBind(
+						q.Name,                                     // queue name
+						exchangeBindingQueue.RoatingKey,            // routing key
+						exchangeTemplate.Name,                      // exchange name
+						exchangeBindingQueue.NoWait,                // no-wait
+						getRabbitMqArgs(exchangeBindingQueue.Args), // arguments
+					)
+					if err != nil {
+						log.Logger.Println(err.Error())
+						panic(err.Error())
 					}
 					rabbit := Rabbit{
 						Pool:       pool,
 						Connection: conn,
+						Bind:       exchangeBindingQueue,
 						Channel:    ch,
+						Exchange:   exchangeTemplate,
 						Queue:      q,
 					}
 					queueMap[rabbit.Queue.Name] = rabbit
@@ -543,6 +696,125 @@ func CreateQueueList(inputQueueConfig *InputQueueConfig) map[string]Rabbit {
 	}
 	return queueMap
 }
+
+func SendMsgByChannel(rabbit Rabbit, msg string) {
+
+	err := rabbit.Channel.PublishWithContext(
+		context.Background(),
+		rabbit.Exchange.Name,
+		rabbit.Bind.RoatingKey,
+		false,
+		false,
+		amqp091.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(msg),
+		},
+	)
+	if err != nil {
+		log.Logger.Println(err.Error())
+		//	panic(err)
+	}
+	fmt.Println("Successfully published message to queue - " + rabbit.Queue.Name)
+
+}
+
+func ConsumeMsg(rabbit Rabbit, queueName string,
+	consumer ConsumerTemplate) {
+
+	conn, err := rabbit.Pool.GetConnection()
+	if err != nil {
+		log.Logger.Println(err.Error())
+		panic(err)
+	}
+	defer conn.Close()
+	fmt.Println("Succesfully connected to RabbitMQ")
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Logger.Println(err.Error())
+		panic(err)
+	}
+	defer ch.Close()
+	fmt.Println(consumer.AutoAck)
+	msgs, err := ch.Consume(
+		queueName,
+		"",
+		consumer.AutoAck,
+		consumer.Exclusive,
+		consumer.NoLocal,
+		consumer.NoWait,
+		getRabbitMqArgs(consumer.Args),
+	)
+
+	forever := make(chan bool)
+	go func() {
+		for d := range msgs {
+			fmt.Printf("Received message: %s\n", d.Body)
+		}
+	}()
+	log.Logger.Info("Successfully connected to queue")
+	log.Logger.Info(" [*] - Waitint for messages")
+	<-forever
+
+}
+
+/*
+// =================================  Consumer   =======================================
+func GetConsumerList(inputQueueConfig *InputQueueConfig) map[string]*InputConsumer {
+	consumerMap := make(map[string]*InputConsumer)
+	for _, c := range inputQueueConfig.Templates.Consumers {
+		inputConsumer := InputConsumerTemplate{
+			Name:      c.Name,
+			AutoAck:   c.AutoAck,
+			Exclusive: c.Exclusive,
+			NoLocal:   c.NoLocal,
+			NoWait:    c.NoWait,
+			Args:      c.Args,
+		}
+		consumerMap[c.Name] = &inputConsumer
+	}
+	return consumerMap
+}
+
+func ConsumeMsg(rabbit Rabbit, inputConsumer *InputConsumer, queueName string) {
+
+	conn, err := rabbit.Pool.GetConnection()
+	if err != nil {
+		log.Error.Println(err)
+		panic(err)
+	}
+	defer conn.Close()
+	fmt.Println("Succesfully connected to RabbitMQ")
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Logger.Println(err.Error())
+		panic(err)
+	}
+	defer ch.Close()
+	fmt.Println(inputConsumer.AutoAck)
+	msgs, err := ch.Consume(
+		queueName,
+		"",
+		inputConsumer.AutoAck,
+		inputConsumer.Exclusive,
+		inputConsumer.NoLocal,
+		inputConsumer.NoWait,
+		getRabbitMqArgs(inputConsumer.Args),
+	)
+
+	forever := make(chan bool)
+	go func() {
+		for d := range msgs {
+			fmt.Printf("Received message: %s\n", d.Body)
+		}
+	}()
+	logger.Info.Println("Successfully connected to queue")
+	logger.Info.Println(" [*] - Waitint for messages")
+	<-forever
+
+}
+*/
 
 /*
 func createRabbitQueue(pool *queueUtil.RabbitMQPool, q QueueTemplate) Rabbit {
@@ -902,4 +1174,3 @@ func ConsumeMsg(rabbit Rabbit, inputConsumer *InputConsumer, queueName string) {
 
 }
 */
-func SendMsgByChannel(rabbit Rabbit, msg string) {}

@@ -17,6 +17,7 @@ import (
 func InsertEvent(ctx *gin.Context) {
 	var msgData config.MsgData
 	if err := ctx.BindJSON(&msgData); err != nil {
+
 		log.Logger.Error(err)
 		//panic(err)
 	}

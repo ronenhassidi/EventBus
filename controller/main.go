@@ -25,7 +25,7 @@ func main() {
 	appViper.Unmarshal(inputQueueConfig)
 	config.ValidateInputQueueConfig(inputQueueConfig)
 
-	config.CreateQueueList(inputQueueConfig)
+	config.RabbitList = config.CreateQueueList(inputQueueConfig)
 	//inputQueueConfig = config.FillQueueTemplateValues(inputQueueConfig)
 	//	config.RabbitList = config.CreateQueueList(inputQueueConfig)
 

@@ -291,6 +291,10 @@ func validateInputExchangeQueues(exchangeQueues []InputExchangeQueues, exchanges
 			log.Logger.Error("Invalid exchange name")
 			panic("Invalid exchange name")
 		}
+		if eq.ExchangeBindingQueue.RoatingKey == "" {
+			log.Logger.Error("Invalid exchange queue routing key")
+			panic("Invalid exchange queue routing key")
+		}
 		found = false
 		for _, ex := range exchanges {
 			if eq.Name == ex.Name {
